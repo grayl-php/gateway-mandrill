@@ -3,6 +3,8 @@
    namespace Grayl\Gateway\Mandrill;
 
    use Grayl\Gateway\Common\GatewayPorterAbstract;
+   use Grayl\Gateway\Mandrill\Config\MandrillAPIEndpoint;
+   use Grayl\Gateway\Mandrill\Config\MandrillConfig;
    use Grayl\Gateway\Mandrill\Controller\MandrillSendTemplateRequestController;
    use Grayl\Gateway\Mandrill\Entity\MandrillEmailAddress;
    use Grayl\Gateway\Mandrill\Entity\MandrillGatewayData;
@@ -15,7 +17,7 @@
 
    /**
     * Front-end for the Mandrill package
-    * @method MandrillGatewayData getSavedGatewayDataEntity ( string $endpoint_id )
+    * @method MandrillGatewayData getSavedGatewayDataEntity ( string $api_endpoint_id )
     *
     * @package Grayl\Gateway\Mandrill
     */
@@ -30,43 +32,50 @@
        *
        * @var string
        */
-      protected string $config_file = 'gateway.mandrill.php';
+      protected string $config_file = 'gateway-mandrill.php';
+
+      /**
+       * The MandrillConfig instance for this gateway
+       *
+       * @var MandrillConfig
+       */
+      protected $config;
 
 
       /**
        * Creates a new Mandrill object for use in a MandrillGatewayData entity
        *
-       * @param array $credentials An array containing all of the credentials needed to create the gateway API
+       * @param MandrillAPIEndpoint $api_endpoint A MandrillAPIEndpoint with credentials needed to create a gateway API object
        *
        * @return Mandrill
        * @throws \Exception
        */
-      public function newGatewayAPI ( array $credentials ): object
+      public function newGatewayAPI ( $api_endpoint ): object
       {
 
          // Return the new API entity
-         return new Mandrill( $credentials[ 'token' ] );
+         return new Mandrill( $api_endpoint->getToken() );
       }
 
 
       /**
        * Creates a new MandrillGatewayData entity
        *
-       * @param string $endpoint_id The API endpoint ID to use (typically "default" is there is only one API gateway)
+       * @param string $api_endpoint_id The API endpoint ID to use (typically "default" if there is only one API gateway)
        *
        * @return MandrillGatewayData
        * @throws \Exception
        */
-      public function newGatewayDataEntity ( string $endpoint_id ): object
+      public function newGatewayDataEntity ( string $api_endpoint_id ): object
       {
 
          // Grab the gateway service
          $service = new MandrillGatewayService();
 
-         // Get an API
-         $api = $this->newGatewayAPI( $service->getAPICredentials( $this->config,
-                                                                   $this->environment,
-                                                                   $endpoint_id ) );
+         // Get a new API
+         $api = $this->newGatewayAPI( $service->getAPIEndpoint( $this->config,
+                                                                $this->environment,
+                                                                $api_endpoint_id ) );
 
          // Configure the API as needed using the service
          $service->configureAPI( $api,
@@ -74,7 +83,7 @@
 
          // Return the gateway
          return new MandrillGatewayData( $api,
-                                         $this->config->getConfig( 'name' ),
+                                         $this->config->getGatewayName(),
                                          $this->environment );
       }
 

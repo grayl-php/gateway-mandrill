@@ -2,7 +2,7 @@
 
    namespace Grayl\Test\Gateway\Mandrill;
 
-   use Grayl\Config\ConfigPorter;
+   use Grayl\File\FilePorter;
    use Grayl\Gateway\Mandrill\Controller\MandrillSendTemplateRequestController;
    use Grayl\Gateway\Mandrill\Controller\MandrillSendTemplateResponseController;
    use Grayl\Gateway\Mandrill\Entity\MandrillEmailAddress;
@@ -13,7 +13,6 @@
    /**
     * Test class for the Mandrill package
     * Note: This test will only work when the sender is allowed in the Mandrill account
-    * TODO: Move the sender address for this test into a config somewhere
     *
     * @package Grayl\Gateway\Mandrill
     */
@@ -21,11 +20,18 @@
    {
 
       /**
-       * An email address to send from
+       * The name of the data file for this test
        *
        * @var string
        */
-      protected static $sender_address;
+      protected static string $data_file = 'gateway-mandrill.data.php';
+
+      /**
+       * The test data
+       *
+       * @var \StdCLass
+       */
+      protected static \StdCLass $test_data;
 
 
       /**
@@ -38,13 +44,12 @@
          MandrillPorter::getInstance()
                        ->setEnvironment( 'sandbox' );
 
-         // Get the config file
-         // TODO: This needs to be cleaned up badly
-         $config_file = ConfigPorter::getInstance()
-                                    ->newConfigControllerFromFile( 'gateway.mandrill.php' );
+         // Get the data file
+         $data_file = FilePorter::getInstance()
+                                ->newFileController( dirname( $_SERVER[ 'DOCUMENT_ROOT' ] ) . '/tests/data/' . self::$data_file );
 
          // Create the config instance from the config file
-         self::$sender_address = $config_file->getConfig( 'test_sender_email' );
+         self::$test_data = $data_file->getIncludedFile();
       }
 
 
@@ -80,7 +85,7 @@
 
          // Create the object
          $email_address = MandrillPorter::getInstance()
-                                        ->newMandrillEmailAddress( self::$sender_address,
+                                        ->newMandrillEmailAddress( self::$test_data->sender_email_address,
                                                                    'Test Suite',
                                                                    [] );
 
@@ -112,11 +117,11 @@
                                                                               'Testing',
                                                                               $sender,
                                                                               [ MandrillPorter::getInstance()
-                                                                                              ->newMandrillEmailAddress( 'devtest@grogwood.com',
+                                                                                              ->newMandrillEmailAddress( self::$test_data->recipient_email_addresses[ 0 ],
                                                                                                                          'Tester',
                                                                                                                          [ 'test_user_var' => 'Test user tag dev' ] ),
                                                                                 MandrillPorter::getInstance()
-                                                                                              ->newMandrillEmailAddress( 'devtest@grogwood.com',
+                                                                                              ->newMandrillEmailAddress( self::$test_data->recipient_email_addresses[ 1 ],
                                                                                                                          'Webmaster',
                                                                                                                          [ 'test_user_var' => 'Test user tag webmaster' ] ), ],
                                                                               [ 'test' ],
@@ -170,12 +175,10 @@
        *
        * @param MandrillSendTemplateResponseController $response A MandrillSendTemplateResponseController returned from the gateway
        *
-       * @depends      testSendMandrillSendTemplateRequestController
+       * @depends testSendMandrillSendTemplateRequestController
        */
       public function testMandrillSendTemplateResponseController ( MandrillSendTemplateResponseController $response ): void
       {
-
-         //TODO: This test will fail without an allowed email to send from
 
          // Test the data
          $this->assertTrue( $response->isSuccessful() );
